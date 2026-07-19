@@ -1,0 +1,18 @@
+# 指定解析器使用的版本。
+edition = "2024"
+# 指定格式化风格应遵循的 Edition 版本。
+style_edition = "2024"
+# 设置每行的最大宽度。这是一个软限制，意味着在极少数情况下（如一个超长的字符串字面量或无法分割的类型名），格式化后的代码可能会超过这个宽度。
+max_width = 999
+# 每个制表符的空格数。
+tab_spaces = 4
+# 单行 if-else 达到最大宽度后变量换行。设置为 0 则始终换行。
+single_line_if_else_max_width = 0
+# 函数调用参数的最大宽度，在此宽度之前会切换到垂直格式。
+fn_call_width = 60
+# 结构体达到最大宽度后变量换行。设置为 0 则始终换行。
+#struct_variant_width = 0
+# 结构体初始化（字面量）达到最大宽度后变量换行。设置为 0 则始终换行。
+#struct_lit_width = 90
+# 是否允许结构体初始化单行显示。false 表示禁止单行。
+#struct_lit_single_line = true

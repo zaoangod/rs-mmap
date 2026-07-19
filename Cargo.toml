@@ -1,0 +1,20 @@
+[package]
+name = "mmio"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+description = "Cross-platform Rust API for memory-mapped file IO"
+keywords = ["mmap", "memory", "mapped", "file", "io"]
+categories = ["filesystem", "os"]
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.186"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Memory",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+] }
