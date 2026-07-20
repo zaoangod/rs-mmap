@@ -143,7 +143,7 @@ impl Drop for MmapInner {
 /// 返回文件长度。不会消费或关闭传入的句柄。
 ///
 /// `File::from_raw_handle` 只用于调用 `metadata`；`ManuallyDrop` 保证不会取得句柄所有权。
-pub fn file_len(handle: RawHandle) -> Result<u64> {
+pub fn get_file_length(handle: RawHandle) -> Result<u64> {
     // 安全性：不能因 drop 关闭传入的句柄，因此立即包进 ManuallyDrop。
     unsafe {
         let file = ManuallyDrop::new(File::from_raw_handle(handle));

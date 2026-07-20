@@ -40,16 +40,16 @@ fn page_size() -> usize {
 }
 
 /// 内存映射的平台相关状态。
-pub struct MmapInner {
+pub struct MmInner {
     pointer: *mut libc::c_void,
     length: usize,
 }
 
-impl MmapInner {
-    /// 创建新的 `MmapInner`，是 `mmap(2)` 的薄封装。
+impl MmInner {
+    /// 创建新的 `MmInner`，是 `mmap(2)` 的薄封装。
     ///
     /// `length` 是对外切片长度，不含为满足页对齐而额外映射的前缀。
-    fn new(length: usize, prot: libc::c_int, flags: libc::c_int, file: RawFd, offset: u64) -> Result<MmapInner> {
+    fn new(length: usize, prot: libc::c_int, flags: libc::c_int, file: RawFd, offset: u64) -> Result<MmInner> {
         let shape = MappingShape::new(offset, length, page_size())?;
         let map_offset: off_t = shape.map_offset.try_into().map_err(|_| Error::new(ErrorKind::InvalidInput, "memory map offset overflows off_t"))?;
 
@@ -92,14 +92,14 @@ impl MmapInner {
         if length == 0 {
             (self.pointer, 1, 0)
         } else {
-            // 安全性：`MmapInner` 保证 self.ptr 向下取整到页边界即真实映射基址，
+            // 安全性：`MmInner` 保证 self.ptr 向下取整到页边界即真实映射基址，
             // 因此结果指针与 self.ptr 处于同一映射内。
             let pointer = unsafe { self.pointer.sub(offset) };
             (pointer, length, offset)
         }
     }
 
-    /// 由原始组件构造 `MmapInner`。
+    /// 由原始组件构造 `MmInner`。
     ///
     /// # Safety
     ///
@@ -117,13 +117,13 @@ impl MmapInner {
     ///
     /// `populate` 只在 Linux 与 Android 转换为 `MAP_POPULATE`；其他 Unix 目标保持相同
     /// interface 但不改变 `mmap` flags。
-    pub fn map(length: usize, file: RawFd, offset: u64, populate: bool) -> Result<MmapInner> {
+    pub fn map(length: usize, file: RawFd, offset: u64, populate: bool) -> Result<MmInner> {
         let populate = if populate {
             MAP_POPULATE
         } else {
             0
         };
-        MmapInner::new(
+        MmInner::new(
             length,
             libc::PROT_READ,
             libc::MAP_SHARED | populate,
@@ -207,28 +207,26 @@ impl MmapInner {
     }
 }
 
-// 安全性：MmapInner 独占其映射资源，且对外只暴露不可变字节视图。经由被映射文件发生的
-// 外部修改风险由 crate 根模块中 `unsafe` 构造函数的契约覆盖。
-unsafe impl Send for MmapInner {}
-unsafe impl Sync for MmapInner {}
+// 安全性：MmInner 独占其映射资源，且对外只暴露不可变字节视图。
+// 经由被映射文件发生的外部修改风险由 crate 根模块中 `unsafe` 构造函数的契约覆盖。
+unsafe impl Send for MmInner {}
+unsafe impl Sync for MmInner {}
 
-impl Drop for MmapInner {
+impl Drop for MmInner {
     fn drop(&mut self) {
-        let (ptr, len, _) = self.as_mm_parameter();
-
-        // 忽略错误：对合法映射解除映射不会失败；而且在 `Drop` 中
-        // 也没有合理的方式上报错误。
-        unsafe { libc::munmap(ptr, len as libc::size_t) };
+        let (pointer, length, _) = self.as_mm_parameter();
+        // 忽略错误：对合法映射解除映射不会失败；而且在 `Drop` 中也没有合理的方式上报错误。
+        unsafe { libc::munmap(pointer, length as libc::size_t) };
     }
 }
 
 /// 返回文件长度。不会消费或关闭传入的 fd。
 ///
 /// `File::from_raw_fd` 只用于调用 `metadata`；`ManuallyDrop` 保证不会取得 fd 所有权。
-pub fn file_len(file: RawFd) -> Result<u64> {
+pub fn get_file_length(file: RawFd) -> Result<u64> {
     // 安全性：不能因 drop 关闭传入的 fd，因此立即包进 ManuallyDrop。
     unsafe {
-        let file = ManuallyDrop::new(File::from_raw_fd(file));
+        let file: ManuallyDrop<File> = ManuallyDrop::new(File::from_raw_fd(file));
         Ok(file.metadata()?.len())
     }
 }

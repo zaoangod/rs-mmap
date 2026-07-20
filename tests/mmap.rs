@@ -9,7 +9,7 @@ use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use mmio::{Advice, Mmap, MmapOptions};
+use mmio::{Advice, Mm, MmOption};
 
 /// 测试专用临时目录：在系统临时目录下创建唯一子目录，drop 时递归删除。
 ///
@@ -46,7 +46,7 @@ fn map_read() {
     let dir = TestDir::new("read");
     let file = dir.create_file("read", 128);
 
-    let mmap = unsafe { Mmap::map(&file).unwrap() };
+    let mmap = unsafe { Mm::map(&file).unwrap() };
     assert_eq!(mmap.len(), 128);
     assert!(!mmap.is_empty());
     assert!(mmap.iter().all(|&b| b == 0));
@@ -58,7 +58,7 @@ fn map_empty_file() {
     let dir = TestDir::new("empty");
     let file = dir.create_file("empty", 0);
 
-    let mmap = unsafe { Mmap::map(&file).unwrap() };
+    let mmap = unsafe { Mm::map(&file).unwrap() };
     assert_eq!(mmap.len(), 0);
     assert!(mmap.is_empty());
     assert_eq!(&mmap[..], &[]);
@@ -81,7 +81,7 @@ fn map_with_offset_and_len() {
     (&file).write_all(&contents).unwrap();
     file.sync_all().unwrap();
 
-    let mmap = unsafe { MmapOptions::new().offset(33).len(9).map(&file).unwrap() };
+    let mmap = unsafe { MmOption::new().offset(33).length(9).map(&file).unwrap() };
     assert_eq!(mmap.len(), 9);
     assert_eq!(&mmap[..], &contents[33..42]);
     // 非页对齐映射的建议范围从 0 开始时仍应正确向下对齐。
@@ -93,7 +93,7 @@ fn map_with_offset_and_len() {
     );
 
     // 不指定长度时，映射从偏移处延伸至文件末尾。
-    let mmap = unsafe { MmapOptions::new().offset(200).map(&file).unwrap() };
+    let mmap = unsafe { MmOption::new().offset(200).map(&file).unwrap() };
     assert_eq!(mmap.len(), 56);
     assert_eq!(&mmap[..], &contents[200..]);
 }
@@ -104,7 +104,7 @@ fn map_offset_beyond_file_errors() {
     let dir = TestDir::new("bounds");
     let file = dir.create_file("bounds", 16);
 
-    let result = unsafe { MmapOptions::new().offset(17).map(&file) };
+    let result = unsafe { MmOption::new().offset(17).map(&file) };
     assert!(result.is_err());
 }
 
@@ -114,7 +114,7 @@ fn map_offset_and_len_overflow_errors() {
     let dir = TestDir::new("overflow");
     let file = dir.create_file("overflow", 1);
 
-    let result = unsafe { MmapOptions::new().offset(u64::MAX).len(1).map(&file) };
+    let result = unsafe { MmOption::new().offset(u64::MAX).length(1).map(&file) };
     assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::InvalidInput);
 }
 
@@ -125,7 +125,7 @@ fn map_fd() {
     let dir = TestDir::new("fd");
     let file = dir.create_file("fd", 128);
 
-    let mmap = unsafe { Mmap::map(file.as_raw_fd()).unwrap() };
+    let mmap = unsafe { Mm::map(file.as_raw_fd()).unwrap() };
     assert_eq!(mmap.len(), 128);
     assert!(mmap.iter().all(|&b| b == 0));
 }
@@ -139,11 +139,11 @@ fn map_big_offset() {
     let file = dir.create_file("big_offset", offset + len);
 
     // 推断长度。
-    let mmap = unsafe { MmapOptions::new().offset(offset).map(&file).unwrap() };
+    let mmap = unsafe { MmOption::new().offset(offset).map(&file).unwrap() };
     assert_eq!(mmap.len(), len as usize);
 
     // 显式长度。
-    let mmap = unsafe { MmapOptions::new().offset(offset).len(len as usize).map(&file).unwrap() };
+    let mmap = unsafe { MmOption::new().offset(offset).length(len as usize).map(&file).unwrap() };
     assert_eq!(mmap.len(), len as usize);
 }
 
@@ -154,7 +154,7 @@ fn advise() {
     let dir = TestDir::new("advise");
     let file = dir.create_file("advise", 128);
 
-    let mmap = unsafe { Mmap::map(&file).unwrap() };
+    let mmap = unsafe { Mm::map(&file).unwrap() };
     mmap.advise(Advice::Normal).unwrap();
     mmap.advise(Advice::Random).unwrap();
     mmap.advise(Advice::Sequential).unwrap();
@@ -174,7 +174,7 @@ fn lock_unlock() {
     let dir = TestDir::new("lock");
     let file = dir.create_file("lock", 128);
 
-    let mmap = unsafe { Mmap::map(&file).unwrap() };
+    let mmap = unsafe { Mm::map(&file).unwrap() };
     mmap.lock().unwrap();
     mmap.lock().unwrap();
     mmap.unlock().unwrap();
@@ -185,14 +185,14 @@ fn lock_unlock() {
 #[test]
 fn traits() {
     fn assert_send_sync<T: Send + Sync>() {}
-    assert_send_sync::<Mmap>();
+    assert_send_sync::<Mm>();
 
     let dir = TestDir::new("traits");
     let file = dir.create_file("traits", 16);
     (&file).write_all(b"test").unwrap();
     file.sync_all().unwrap();
 
-    let mmap = unsafe { Mmap::map(&file).unwrap() };
+    let mmap = unsafe { Mm::map(&file).unwrap() };
     let slice: &[u8] = mmap.as_ref();
     assert_eq!(&slice[..4], b"test");
     assert_eq!(&mmap[..4], b"test"); // 通过 Deref 访问
@@ -200,5 +200,5 @@ fn traits() {
     // Debug 输出应以类型名 `Mmap` 开头。
     let debug = format!("{:?}", mmap);
     assert!(debug.starts_with("Mmap {"), "unexpected: {debug}");
-    let _ = format!("{:?}", MmapOptions::new().offset(1).len(2));
+    let _ = format!("{:?}", MmOption::new().offset(1).length(2));
 }
