@@ -11,7 +11,7 @@ use std::os::windows::io::{FromRawHandle, RawHandle};
 use std::ptr::{self, NonNull};
 
 use windows_sys::Win32::Foundation::CloseHandle;
-use windows_sys::Win32::System::Memory::{CreateFileMappingW, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, PAGE_READONLY, PrefetchVirtualMemory, UnmapViewOfFile, WIN32_MEMORY_RANGE_ENTRY};
+use windows_sys::Win32::System::Memory::{CreateFileMappingW, MapViewOfFile, PrefetchVirtualMemory, UnmapViewOfFile, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READONLY, WIN32_MEMORY_RANGE_ENTRY};
 use windows_sys::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
 use windows_sys::Win32::System::Threading::GetCurrentProcess;
 
