@@ -21,11 +21,15 @@
 
 ## 平台支持
 
-| 平台 | 创建映射 | `populate` | `advise` | `lock` / `unlock` |
-| --- | --- | --- | --- | --- |
-| Unix（macOS、Linux、Android 等） | `mmap(2)` | Linux / Android：`MAP_POPULATE` | `madvise(2)` | `mlock(2)` / `munlock(2)` |
-| Windows | `CreateFileMappingW` / `MapViewOfFile` | 无操作 | 仅 `WillNeed` 调用 `PrefetchVirtualMemory` | 不提供 |
-| 其他目标 | 返回 `ErrorKind::Unsupported` | — | — | — |
+<!--@formatter:off-->
+
+| 平台                             | 创建映射                               | `populate`                      | `advise`                                   | `lock` / `unlock`         |
+|----------------------------------|----------------------------------------|---------------------------------|--------------------------------------------|---------------------------|
+| Unix（macOS、Linux、Android 等） | `mmap(2)`                              | Linux / Android：`MAP_POPULATE` | `madvise(2)`                               | `mlock(2)` / `munlock(2)` |
+| Windows                          | `CreateFileMappingW` / `MapViewOfFile` | 无操作                          | 仅 `WillNeed` 调用 `PrefetchVirtualMemory` | 不提供                    |
+| 其他目标                         | 返回 `ErrorKind::Unsupported`          | ---                             | ---                                        | ---                       |
+
+<!--@formatter:on-->
 
 Windows 上 `Normal`、`Random`、`Sequential` 与 `DontNeed` 都是成功返回的无操作；它们不能当作跨平台性能保证。
 
