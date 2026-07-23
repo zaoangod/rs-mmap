@@ -11,7 +11,7 @@ use std::os::windows::io::{FromRawHandle, RawHandle};
 use std::ptr::{self, NonNull};
 
 use windows_sys::Win32::Foundation::CloseHandle;
-use windows_sys::Win32::System::Memory::{CreateFileMappingW, MapViewOfFile, PrefetchVirtualMemory, UnmapViewOfFile, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READONLY, WIN32_MEMORY_RANGE_ENTRY};
+use windows_sys::Win32::System::Memory::{CreateFileMappingW, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, PAGE_READONLY, PrefetchVirtualMemory, UnmapViewOfFile, WIN32_MEMORY_RANGE_ENTRY};
 use windows_sys::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
 use windows_sys::Win32::System::Threading::GetCurrentProcess;
 
@@ -33,22 +33,22 @@ fn allocation_granularity() -> usize {
 ///
 /// `ptr` 指向用户请求的视图起点，而不是 `MapViewOfFile` 返回的对齐基址；`Drop` 会恢复
 /// 后者后再调用 `UnmapViewOfFile`。
-pub struct MmapInner {
+pub struct MmInner {
     ptr: *mut c_void,
     len: usize,
 }
 
-impl MmapInner {
+impl MmInner {
     /// 创建从 `offset` 开始、长度为 `len` 字节的文件只读映射。
     ///
     /// Windows 要求视图偏移是分配粒度的整数倍，`MappingShape` 保留所需的前缀并只向
     /// caller 暴露请求的 `len` 字节。
-    pub fn map(len: usize, handle: RawHandle, offset: u64, _populate: bool) -> Result<MmapInner> {
+    pub fn map(len: usize, handle: RawHandle, offset: u64, _populate: bool) -> Result<MmInner> {
         if len == 0 {
             // `CreateFileMappingW` 会以 ERROR_FILE_INVALID 拒绝零长度映射；
             // 改为返回空映射。该指针虽悬空（dangling）但非空，并满足 u8 零长度切片的
             // 对齐要求，因此可安全地构造 `&[]`。
-            return Ok(MmapInner::empty());
+            return Ok(MmInner::empty());
         }
 
         let shape = MappingShape::new(offset, len, allocation_granularity())?;
@@ -81,13 +81,13 @@ impl MmapInner {
             if view.Value.is_null() {
                 Err(Error::last_os_error())
             } else {
-                Ok(MmapInner { ptr: view.Value.add(shape.view_offset), len })
+                Ok(MmInner { ptr: view.Value.add(shape.view_offset), len })
             }
         }
     }
 
-    fn empty() -> MmapInner {
-        MmapInner { ptr: NonNull::<c_void>::dangling().as_ptr(), len: 0 }
+    fn empty() -> MmInner {
+        MmInner { ptr: NonNull::<c_void>::dangling().as_ptr(), len: 0 }
     }
 
     /// 返回指向映射起始地址的指针。
@@ -121,12 +121,12 @@ impl MmapInner {
     }
 }
 
-// 安全性：MmapInner 独占其映射视图资源，且对外只暴露不可变字节视图。经由被映射文件
+// 安全性：MmInner 独占其映射视图资源，且对外只暴露不可变字节视图。经由被映射文件
 // 发生的外部修改风险由 crate 根模块中 `unsafe` 构造函数的契约覆盖。
-unsafe impl Send for MmapInner {}
-unsafe impl Sync for MmapInner {}
+unsafe impl Send for MmInner {}
+unsafe impl Sync for MmInner {}
 
-impl Drop for MmapInner {
+impl Drop for MmInner {
     fn drop(&mut self) {
         if self.len == 0 {
             return;

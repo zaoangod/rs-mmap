@@ -98,7 +98,7 @@ pub struct MmRawDescriptor(RawHandle);
 /// 其他平台仅支持 `&File`。
 ///
 /// 实现本 trait 的类型只在创建映射时被读取。调用 [`MmOption::map`] 时，描述符必须
-/// 指向可读取的常规文件并在调用完成前保持有效；`Mmap` 创建成功后不再借用它。
+/// 指向可读取的常规文件并在调用完成前保持有效；`Mm` 创建成功后不再借用它。
 #[cfg(any(unix, windows))]
 pub trait MmAsRawDesc {
     fn as_raw_desc(&self) -> MmRawDescriptor;
@@ -111,9 +111,9 @@ pub trait MmAsRawDesc {
 /// 其他平台仅支持 `&File`。
 ///
 /// 实现本 trait 的类型只在创建映射时被读取。调用 [`MmOption::map`] 时，描述符必须
-/// 指向可读取的常规文件并在调用完成前保持有效；`Mmap` 创建成功后不再借用它。
+/// 指向可读取的常规文件并在调用完成前保持有效；`Mm` 创建成功后不再借用它。
 #[cfg(not(any(unix, windows)))]
-pub trait MmapAsRawDesc {
+pub trait MmAsRawDesc {
     fn as_raw_desc(&self) -> MmRawDescriptor<'_>;
 }
 
@@ -304,7 +304,7 @@ impl MmOption {
 /// 只读文件内存映射。
 ///
 /// 通过 [`Mm::map`] 或 [`MmOption::map`] 构造。可解引用为 `&[u8]`，
-/// `len()`、`is_empty()`、`as_ptr()` 等方法均来自切片。`Mmap` 不借用创建它的文件对象；
+/// `len()`、`is_empty()`、`as_ptr()` 等方法均来自切片。`Mm` 不借用创建它的文件对象；
 /// 关闭来源描述符不会解除映射。
 pub struct Mm {
     inner: MmInner,
@@ -395,6 +395,6 @@ impl AsRef<[u8]> for Mm {
 
 impl fmt::Debug for Mm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Mmap").field("ptr", &self.as_ptr()).field("len", &self.len()).finish()
+        f.debug_struct("Mm").field("ptr", &self.as_ptr()).field("len", &self.len()).finish()
     }
 }

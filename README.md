@@ -12,7 +12,7 @@
 
 本 crate 只支持文件支撑的只读映射：
 
-- 支持：整个文件或指定字节区间的 `Mmap`、访问模式提示、Unix 内存锁定。
+- 支持：整个文件或指定字节区间的 `Mm`、访问模式提示、Unix 内存锁定。
 - 不支持：可写映射、匿名映射、写时复制、可执行映射、刷新、裸指针映射和 Linux `mremap`。
 
 这不是 `memmap2` 的替代品；需要上述能力时应直接使用 `memmap2`。
@@ -192,7 +192,7 @@ tests/mmap.rs   平台无关集成测试；Unix 追加 fd 与 lock 测试
 examples/       可运行的使用示例（cargo run --example <名称>）
 ```
 
-公共层只依赖 `MmapInner` 的 `map`、`pointer`、`length` 与 `advise` interface。
+公共层只依赖 `MmInner` 的 `map`、`pointer`、`length` 与 `advise` interface。
 
 平台 adapter 自行选择其对齐粒度和系统调用，`MappingShape` 则集中验证映射范围的算术不变量。
 

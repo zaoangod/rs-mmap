@@ -118,7 +118,7 @@ fn map_offset_and_len_overflow_errors() {
     assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::InvalidInput);
 }
 
-/// 可以直接用裸 fd 创建映射（`MmapAsRawDesc`）。
+/// 可以直接用裸 fd 创建映射（`MmAsRawDesc`）。
 #[cfg(unix)]
 #[test]
 fn map_fd() {
@@ -197,8 +197,8 @@ fn traits() {
     assert_eq!(&slice[..4], b"test");
     assert_eq!(&mmap[..4], b"test"); // 通过 Deref 访问
 
-    // Debug 输出应以类型名 `Mmap` 开头。
+    // Debug 输出应以类型名 `Mm` 开头。
     let debug = format!("{:?}", mmap);
-    assert!(debug.starts_with("Mmap {"), "unexpected: {debug}");
+    assert!(debug.starts_with("Mm {"), "unexpected: {debug}");
     let _ = format!("{:?}", MmOption::new().offset(1).length(2));
 }
